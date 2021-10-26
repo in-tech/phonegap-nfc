@@ -104,7 +104,11 @@ public class NfcPlugin extends CordovaPlugin implements NfcAdapter.OnNdefPushCom
 
         // the channel is set up when the plugin starts
         if (action.equalsIgnoreCase(CHANNEL)) {
-            channelCallback = callbackContext;
+            // channel action is called twice if an iframe is used in app
+            // make sure callbackContext will not change
+            if (channelCallback == null) {
+                channelCallback = callbackContext;
+            }
             return true; // short circuit
         }
 
@@ -727,6 +731,17 @@ public class NfcPlugin extends CordovaPlugin implements NfcAdapter.OnNdefPushCom
         });
     }
 
+    private static void wait(int ms) {
+        try
+        {
+            Thread.sleep(ms);
+        }
+        catch(InterruptedException ex)
+        {
+            Thread.currentThread().interrupt();
+        }
+    }
+
     // Send the event data through a channel so the JavaScript side can fire the event
     private void sendEvent(String type, JSONObject tag) {
 
@@ -737,7 +752,15 @@ public class NfcPlugin extends CordovaPlugin implements NfcAdapter.OnNdefPushCom
 
             PluginResult result = new PluginResult(PluginResult.Status.OK, event);
             result.setKeepCallback(true);
-            channelCallback.sendPluginResult(result);
+
+            if (channelCallback != null) {
+                channelCallback.sendPluginResult(result);
+            }
+            else {
+                wait(1000);
+                channelCallback.sendPluginResult(result);
+            }
+
         } catch (JSONException e) {
             Log.e(TAG, "Error sending NFC event through the channel", e);
         }
