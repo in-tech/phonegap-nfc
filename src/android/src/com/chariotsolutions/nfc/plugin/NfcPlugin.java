@@ -104,7 +104,11 @@ public class NfcPlugin extends CordovaPlugin implements NfcAdapter.OnNdefPushCom
 
         // the channel is set up when the plugin starts
         if (action.equalsIgnoreCase(CHANNEL)) {
-            channelCallback = callbackContext;
+            // channel action is called twice if an iframe is used in app
+            // make sure callbackContext will not change
+            if (channelCallback == null) {
+                channelCallback = callbackContext;
+            }
             return true; // short circuit
         }
 
