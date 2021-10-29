@@ -449,6 +449,13 @@ var nfc = {
         }
     },
 
+    /**
+     * NOTE: Added functionality to read tag on call.
+     */
+    read: function(win, fail) {
+        cordova.exec(win, fail, "NfcPlugin", "readTag", []);
+    },
+
     makeReadOnly: function (win, fail) {
         cordova.exec(win, fail, "NfcPlugin", "makeReadOnly", []);
     },

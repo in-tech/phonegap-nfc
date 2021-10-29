@@ -44,6 +44,7 @@ public class NfcPlugin extends CordovaPlugin implements NfcAdapter.OnNdefPushCom
     private static final String REGISTER_DEFAULT_TAG = "registerTag";
     private static final String REMOVE_DEFAULT_TAG = "removeTag";
     private static final String WRITE_TAG = "writeTag";
+    private static final String READ_TAG = "readTag";
     private static final String MAKE_READ_ONLY = "makeReadOnly";
     private static final String ERASE_TAG = "eraseTag";
     private static final String SHARE_TAG = "shareTag";
@@ -152,6 +153,9 @@ public class NfcPlugin extends CordovaPlugin implements NfcAdapter.OnNdefPushCom
 
         } else if (action.equalsIgnoreCase(WRITE_TAG)) {
             writeTag(data, callbackContext);
+
+        } else if (action.equalsIgnoreCase(READ_TAG)) {
+            readTag(callbackContext);
 
         } else if (action.equalsIgnoreCase(MAKE_READ_ONLY)) {
             makeReadOnly(callbackContext);
@@ -336,6 +340,90 @@ public class NfcPlugin extends CordovaPlugin implements NfcAdapter.OnNdefPushCom
                 new NdefRecord(NdefRecord.TNF_EMPTY, new byte[0], new byte[0], new byte[0])
         };
         writeNdefMessage(new NdefMessage(records), tag, callbackContext);
+    }
+
+
+    /**
+     * NOTE: Added functionality to read tag on call.
+     */
+    private void readTag(CallbackContext callbackContext) throws JSONException {
+        if (getIntent() == null || savedIntent == null) { // TODO remove this and handle LostTag
+            callbackContext.error("Failed to read tag, received null intent");
+        }
+
+        Tag tag = savedIntent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+        readNdefMessage(tag, callbackContext);
+    }
+
+    /**
+     * NOTE: Added functionality to read tag on call.
+     */
+    private void readNdefMessage(final Tag tag, final CallbackContext callbackContext) {
+        cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    /**
+                     * Added functionality to read mere NfcV and NfcA tags.
+                     */
+                    Ndef ndef = Ndef.get(tag);
+                    if (ndef != null) {
+                        ndef.connect();
+
+                        NdefMessage message = ndef.getNdefMessage();
+                        if (message == null) {
+                            callbackContext.error("Tag contains no valid NDEF message");
+                        } else {
+                            JSONArray stringifiedMessage = Util.messageToJSON(message);
+                            callbackContext.success(stringifiedMessage);
+                        }
+                        ndef.close();
+                    } 
+                    // else {
+                    //     final NfcV nfcv = NfcV.get(tag);
+                    //     if (nfcv != null) {
+                    //         final NdefMessage message = NfcVRead.readNdefMessage(nfcv);
+                    //         if (message == null) {
+                    //             callbackContext.error("Tag contains no valid NDEF message");
+                    //         } else {
+                    //             final JSONArray stringifiedMessage = Util.messageToJSON(message);
+                    //             callbackContext.success(stringifiedMessage);
+                    //         }
+                    //     } else {
+                    //         final IsoDep isoDep = IsoDep.get(tag);
+                    //         if (isoDep != null) {
+                    //             final NdefMessage message = IsoDepRead.readNdefMessage(isoDep);
+                    //             if (message == null) {
+                    //                 callbackContext.error("Tag contains no valid NDEF message");
+                    //             } else {
+                    //                 final JSONArray stringifiedMessage = Util.messageToJSON(message);
+                    //                 callbackContext.success(stringifiedMessage);
+                    //             }
+                    //         } else {
+                    //             final NfcA nfca = NfcA.get(tag);
+                    //             if (nfca != null) {
+                    //                 final NdefMessage message = NfcARead.readNdefMessage(nfca);
+                    //                 if (message == null) {
+                    //                     callbackContext.error("Tag contains no valid NDEF message");
+                    //                 } else {
+                    //                     final JSONArray stringifiedMessage = Util.messageToJSON(message);
+                    //                     callbackContext.success(stringifiedMessage);
+                    //                 }
+                    //             } else {
+                    //                 callbackContext.error("Tag contains no NDEF message");
+                    //             }
+                    //         }
+                    //     }
+                    // }
+                } catch (FormatException e) {
+                    callbackContext.error(e.getMessage());
+                } catch (TagLostException e) {
+                    callbackContext.error(e.getMessage());
+                } catch (IOException e) {
+                    callbackContext.error(e.getMessage());
+                }
+            }
+        });
     }
 
     private void writeTag(JSONArray data, CallbackContext callbackContext) throws JSONException {
