@@ -352,6 +352,9 @@ public class NfcPlugin extends CordovaPlugin implements NfcAdapter.OnNdefPushCom
         }
 
         Tag tag = savedIntent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+        if (tag == null) {
+            callbackContext.error("Tag not found");
+        }
         readNdefMessage(tag, callbackContext);
     }
 
