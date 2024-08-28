@@ -229,36 +229,18 @@ public class NfcPlugin extends CordovaPlugin {
         });
     }
 
-    private NfcAdapter.ReaderCallback callback = new NfcAdapter.ReaderCallback() {
-        @Override
-        public void onTagDiscovered(Tag tag) {
+    private NfcAdapter.ReaderCallback callback=new NfcAdapter.ReaderCallback(){@Override public void onTagDiscovered(Tag tag){
 
-            JSONObject json;
+    JSONObject json;
 
-            // If the tag supports Ndef, try and return an Ndef message
-            List<String> techList = Arrays.asList(tag.getTechList());
-            if (techList.contains(Ndef.class.getName())) {
-                Ndef ndef = Ndef.get(tag);
-                json = Util.ndefToJSON(ndef);
-            } else {
-                json = Util.tagToJSON(tag);
-            }
+    // If the tag supports Ndef, try and return an Ndef message
+    List<String>techList=Arrays.asList(tag.getTechList());if(techList.contains(Ndef.class.getName())){Ndef ndef=Ndef.get(tag);json=Util.ndefToJSON(ndef);}else{json=Util.tagToJSON(tag);}
 
-            Intent tagIntent = new Intent();
-            tagIntent.putExtra(NfcAdapter.EXTRA_TAG, tag);
-            savedIntent = tagIntent;
-            setIntent(tagIntent);
+    Intent tagIntent=new Intent();tagIntent.putExtra(NfcAdapter.EXTRA_TAG,tag);savedIntent=tagIntent;setIntent(tagIntent);
 
-            PluginResult result = new PluginResult(PluginResult.Status.OK, json);
-            result.setKeepCallback(true);
-            if (readerModeCallback != null) {
-                readerModeCallback.sendPluginResult(result);
-            } else {
-                Log.i(TAG, "readerModeCallback is null - reader mode probably disabled in the meantime");
-            }
+    PluginResult result=new PluginResult(PluginResult.Status.OK,json);result.setKeepCallback(true);if(readerModeCallback!=null){readerModeCallback.sendPluginResult(result);}else{Log.i(TAG,"readerModeCallback is null - reader mode probably disabled in the meantime");}
 
-        }
-    };
+    }};
 
     private void registerDefaultTag(CallbackContext callbackContext) {
         addTagFilter();
@@ -589,7 +571,12 @@ public class NfcPlugin extends CordovaPlugin {
             Activity activity = getActivity();
             Intent intent = new Intent(activity, activity.getClass());
             intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            pendingIntent = PendingIntent.getActivity(activity, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                pendingIntent = PendingIntent.getActivity(activity, 0, intent, PendingIntent.FLAG_MUTABLE);
+            } else {
+                pendingIntent = PendingIntent.getActivity(activity, 0, intent, 0);
+            }
         }
     }
 
